@@ -100,21 +100,26 @@ public class HttpTransport: ClientTransportProtocol {
 
     public func abort(connection: ConnectionProtocol, timeout: Double, connectionData: String?) {
         guard timeout > 0, !self.startedAbort else { return }
-       
         self.startedAbort = true
-
         let url = connection.url.appending("abort")
-
         let parameters = self.getConnectionParameters(connection: connection, connectionData: connectionData)
-
-        let encodedRequest = connection.getRequest(url: url, httpMethod: .get, encoding: URLEncoding.default, parameters: parameters, timeout: 2.0)
-
-        let request = connection.getRequest(url: encodedRequest.request!.url!.absoluteString, httpMethod: .post, encoding: URLEncoding.httpBody, parameters: nil)
-        request.validate().response { response in
-            if response.error != nil {
-                self.completeAbort()
+        connection
+            .getRequest(url: url, httpMethod: .get, encoding: URLEncoding.default, parameters: parameters, timeout: 2.0)
+            .validate()
+            .response { response in
+                guard let postUrl = response.request?.url?.absoluteString else {
+                    self.completeAbort()
+                    return
+                }
+                connection
+                    .getRequest(url: postUrl, httpMethod: .post, encoding: URLEncoding.httpBody, parameters: nil)
+                    .validate()
+                    .response { response in
+                        if response.error != nil {
+                            self.completeAbort()
+                        }
+                    }
             }
-        }
     }
     
     func getConnectionParameters(connection: ConnectionProtocol, connectionData: String?) -> [String: Any] {
