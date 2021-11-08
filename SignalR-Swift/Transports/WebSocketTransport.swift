@@ -128,8 +128,7 @@ public class WebSocketTransport: HttpTransport, WebSocketDelegate {
             }
 
             if let encodedRequest = request?.request {
-                self.webSocket = WebSocket(request: encodedRequest)
-                self.webSocket!.disableSSLCertValidation = connection?.webSocketAllowsSelfSignedSSL ?? false
+                self.webSocket = WebSocket(request: encodedRequest, certPinner: FoundationSecurity(allowSelfSigned: connection?.webSocketAllowsSelfSignedSSL ?? false))
                 self.webSocket!.delegate = self
                 self.webSocket!.connect()
             }
@@ -139,7 +138,7 @@ public class WebSocketTransport: HttpTransport, WebSocketDelegate {
     }
 
     func reconnect(connection: ConnectionProtocol?) {
-        _ = BlockOperation { [weak self] in
+        let _ = BlockOperation { [weak self] in
             if let strongSelf = self, let connection = connection, Connection.ensureReconnecting(connection: connection) {
                 strongSelf.performConnect(reconnecting: true, completionHandler: nil)
             }
@@ -198,7 +197,6 @@ public class WebSocketTransport: HttpTransport, WebSocketDelegate {
             self.stopWebSocket()
         }
     }
-    
-    public func websocketDidReceiveData(socket: WebSocketClient, data: Data) {
-    }
+
+    public func didReceive(event: WebSocketEvent, client: WebSocket) {}
 }

@@ -11,10 +11,15 @@ let package = Package(
         .library(name: "SignalRSwift", targets: ["SignalRSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Alamofire/Alamofire", .exact("4.8.2")),
-        .package(url: "https://github.com/daltoniam/Starscream.git", .exact("3.0.6"))
+        .package(url: "https://github.com/Alamofire/Alamofire", from: "5.4.4"),
+        .package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.4")
     ],
     targets: [
-        .target(name: "SignalRSwift", dependencies: ["Alamofire", "Starscream"], path: "SignalR-Swift")
+        .target(
+            name: "SignalRSwift",
+            dependencies: ["Alamofire", "Starscream"],
+            path: "SignalR-Swift",
+            exclude: ["Info.plist"]
+        )
     ]
 )

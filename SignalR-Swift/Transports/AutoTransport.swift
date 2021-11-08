@@ -41,8 +41,8 @@ public class AutoTransport: HttpTransport {
             guard let strongRef = self else { return }
             
             if error == nil,
-                let tryWebSockets = response?.tryWebSockets, !tryWebSockets,
-                let invalidIndex = strongRef.transports.index(where: { $0.name == "webSockets" }) {
+               let tryWebSockets = response?.tryWebSockets, !tryWebSockets,
+               let invalidIndex = strongRef.transports.firstIndex(where: { $0.name == "webSockets" }) {
                 strongRef.transports.remove(at: invalidIndex)
             }
             

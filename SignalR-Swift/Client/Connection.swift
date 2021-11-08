@@ -44,7 +44,7 @@ public class Connection: ConnectionProtocol {
     public var headers = HTTPHeaders()
     public var keepAliveData: KeepAliveData?
     public var webSocketAllowsSelfSignedSSL = false
-    public internal(set) var sessionManager: SessionManager
+    public internal(set) var sessionManager: Session
 
     public var transport: ClientTransportProtocol?
     public var transportConnectTimeout = 0.0
@@ -68,7 +68,7 @@ public class Connection: ConnectionProtocol {
         return connection.state == .reconnecting
     }
 
-    public init(withUrl url: String, queryString: [String: String]? = nil, sessionManager: SessionManager = .default) {
+    public init(withUrl url: String, queryString: [String: String]? = nil, sessionManager: Session = .default) {
         self.url = url.hasSuffix("/") ? url : url.appending("/")
         self.queryString = queryString
         self.sessionManager = sessionManager
@@ -258,7 +258,9 @@ public class Connection: ConnectionProtocol {
     }
 
     public func didReconnect() {
-        NSObject.cancelPreviousPerformRequests(withTarget: self.disconnectTimeoutOperation, selector: #selector(BlockOperation.start), object: nil)
+        self.disconnectTimeoutOperation.flatMap {
+            NSObject.cancelPreviousPerformRequests(withTarget: $0, selector: #selector(BlockOperation.start), object: nil)
+        }
         self.disconnectTimeoutOperation = nil
         
         self.reconnected?()
@@ -300,7 +302,7 @@ public class Connection: ConnectionProtocol {
         var globalHeaders = self.headers
         globalHeaders["User-Agent"] = self.createUserAgentString(client: "SignalR.Client.iOS")
 
-        for (httpHeader, value) in headers {
+        for (httpHeader, value) in headers.dictionary {
             globalHeaders[httpHeader] = value
         }
 
