@@ -78,6 +78,8 @@ public class HubConnection: Connection, HubConnectionProtocol {
     // MARK: - Received Data
 
     override public func didReceiveData(data: Any) {
+        super.didReceiveData(data: data)
+        
         guard let dict = data as? [String: Any]  else { return }
         
         if dict["I"] != nil {
@@ -95,8 +97,6 @@ public class HubConnection: Connection, HubConnectionProtocol {
             
             hubProxy.invokeEvent(eventName: invocation.method, withArgs: invocation.args)
         }
-
-        super.didReceiveData(data: data)
     }
 
     override public func willReconnect() {
