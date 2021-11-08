@@ -18,6 +18,7 @@ public class ServerSentEventsTransport: HttpTransport {
     private let sseQueue = DispatchQueue(label: "com.autosoftdms.SignalR-Swift.serverSentEvents", qos: .userInitiated)
     
     var reconnectDelay: TimeInterval = 2.0
+    var requestTimeout: TimeInterval = 240
     
     override public var name: String? {
         return "serverSentEvents"
@@ -47,7 +48,7 @@ public class ServerSentEventsTransport: HttpTransport {
             strongSelf.completionHandler = nil
         }
         
-        self.connectTimeoutOperation!.perform(#selector(BlockOperation.start), with: nil, afterDelay: connection.transportConnectTimeout)
+        self.connectTimeoutOperation!.perform(#selector(BlockOperation.start), with: nil, afterDelay: max(connection.transportConnectTimeout, requestTimeout + reconnectDelay))
         
         self.open(connection: connection, connectionData: connectionData, isReconnecting: false)
     }
@@ -81,7 +82,7 @@ public class ServerSentEventsTransport: HttpTransport {
                               httpMethod: .get,
                               encoding: URLEncoding.default,
                               parameters: parameters,
-                              timeout: 240,
+                              timeout: requestTimeout,
                               headers: ["Connection": "Keep-Alive"])
             .responseData(queue: sseQueue) { [weak self, weak connection] data in
                 guard let strongSelf = self, let strongConnection = connection, let data = data.data else { return }

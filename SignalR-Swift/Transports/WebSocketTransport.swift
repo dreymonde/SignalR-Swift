@@ -101,11 +101,20 @@ public class WebSocketTransport: HttpTransport, WebSocketDelegate {
         }
 
         do {
-            let baseUrl = try urlComponents?.asURL()
+            let wsBaseUrl = try urlComponents?.asURL()
+            let wsUrl = reconnecting ? wsBaseUrl!.absoluteString.appending("reconnect") : wsBaseUrl!.absoluteString.appending("connect")
+            let timeout = max(connection!.transportConnectTimeout, 30)
 
-            let url = reconnecting ? baseUrl!.absoluteString.appending("reconnect") : baseUrl!.absoluteString.appending("connect")
-
-            let request = connection?.getRequest(url: url, httpMethod: .get, encoding: URLEncoding.default, parameters: parameters, timeout: 30)
+            connection?
+                .getRequest(url: wsUrl, httpMethod: .get, encoding: URLEncoding.default, parameters: parameters, timeout: timeout)
+                .response(completionHandler: { [weak self] response in
+                    guard let encodedRequest = response.request else {
+                        return
+                    }
+                    self?.webSocket = WebSocket(request: encodedRequest, certPinner: FoundationSecurity(allowSelfSigned: connection?.webSocketAllowsSelfSignedSSL ?? false))
+                    self?.webSocket?.delegate = self
+                    self?.webSocket?.connect()
+                })
 
             self.startClosure = completionHandler
             if let startClosure = self.startClosure {
@@ -124,13 +133,7 @@ public class WebSocketTransport: HttpTransport, WebSocketDelegate {
                     startClosure(nil, error)
                 })
 
-                self.connectTimeoutOperation?.perform(#selector(BlockOperation.start), with: nil, afterDelay: connection!.transportConnectTimeout)
-            }
-
-            if let encodedRequest = request?.request {
-                self.webSocket = WebSocket(request: encodedRequest, certPinner: FoundationSecurity(allowSelfSigned: connection?.webSocketAllowsSelfSignedSSL ?? false))
-                self.webSocket!.delegate = self
-                self.webSocket!.connect()
+                self.connectTimeoutOperation?.perform(#selector(BlockOperation.start), with: nil, afterDelay: timeout)
             }
         } catch {
 
@@ -147,7 +150,15 @@ public class WebSocketTransport: HttpTransport, WebSocketDelegate {
 
     // MARK: - WebSocketDelegate
 
-    public func websocketDidConnect(socket: WebSocketClient){
+    public func websocketDidConnect(socket: WebSocketClient) {
+        if let connectTimeoutOperation = self.connectTimeoutOperation {
+            NSObject.cancelPreviousPerformRequests(withTarget: connectTimeoutOperation, selector: #selector(BlockOperation.start), object: nil)
+            self.connectTimeoutOperation = nil
+        }
+        if let startClosure = self.startClosure {
+            self.startClosure = nil
+            startClosure(nil, nil)
+        }
         if let connection = self.connectionInfo?.connection, connection.changeState(oldState: .reconnecting, toState: .connected) {
             connection.didReconnect()
         }
@@ -198,5 +209,26 @@ public class WebSocketTransport: HttpTransport, WebSocketDelegate {
         }
     }
 
-    public func didReceive(event: WebSocketEvent, client: WebSocket) {}
+    public func didReceive(event: WebSocketEvent, client: WebSocket) {
+        switch event {
+        case .connected:
+            websocketDidConnect(socket: client)
+        case .disconnected(let description, let code):
+            let error = NSError(domain: "com.autosoftdms.SignalR-Swift.\(type(of: self))", code: Int(code), userInfo: [NSLocalizedDescriptionKey: description])
+            websocketDidDisconnect(socket: client, error: error)
+        case .text(let text):
+            websocketDidReceiveMessage(socket: client, text: text)
+        case .binary(let data):
+            guard let text = String(data: data, encoding: .utf8) else {
+                return
+            }
+            websocketDidReceiveMessage(socket: client, text: text)
+        case .error(let error):
+            websocketDidDisconnect(socket: client, error: error)
+        case .cancelled:
+            websocketDidDisconnect(socket: client, error: nil)
+        default:
+            break
+        }
+    }
 }
