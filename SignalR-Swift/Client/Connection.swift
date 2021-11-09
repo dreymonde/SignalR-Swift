@@ -47,7 +47,7 @@ public class Connection: ConnectionProtocol {
     public internal(set) var sessionManager: Session
 
     public var transport: ClientTransportProtocol?
-    public var transportConnectTimeout = 0.0
+    public var transportConnectTimeout = 5.0
 
     public var started: ConnectionStartedClosure?
     public var received: ConnectionReceivedClosure?

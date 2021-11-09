@@ -24,6 +24,8 @@ public class LongPollingTransport: HttpTransport {
         return false
     }
 
+    public override init() {}
+
     override public func negotiate(connection: ConnectionProtocol, connectionData: String?, completionHandler: ((NegotiationResponse?, Error?) -> ())?) {
         super.negotiate(connection: connection, connectionData: connectionData, completionHandler: completionHandler)
     }
