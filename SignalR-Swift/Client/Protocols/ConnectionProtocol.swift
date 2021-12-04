@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import UIKit
+//import UIKit
 import Alamofire
 
 public protocol ConnectionProtocol: AnyObject {

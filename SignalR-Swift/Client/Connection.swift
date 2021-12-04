@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import UIKit
+//import UIKit
 import Alamofire
 
 public typealias ConnectionStartedClosure = (() -> ())
@@ -318,7 +318,7 @@ public class Connection: ConnectionProtocol {
             self.assemblyVersion = Version(major: 2, minor: 0)
         }
 
-        return "\(client)/\(self.assemblyVersion!) (\(UIDevice.current.localizedModel) \(UIDevice.current.systemVersion))"
+        return "\(client)/\(self.assemblyVersion!) apple"
     }
 
     public func processResponse(response: Data, shouldReconnect: inout Bool, disconnected: inout Bool) {

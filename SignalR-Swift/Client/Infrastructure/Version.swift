@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import UIKit
+//import UIKit
 
 public struct Version : Equatable, CustomStringConvertible {
     let major: UInt
