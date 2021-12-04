@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "SignalRSwift",
     platforms: [
-        .iOS(.v10)
+        .iOS(.v10), .macOS(.v10_13)
     ],
     products: [
         .library(name: "SignalRSwift", targets: ["SignalRSwift"]),
